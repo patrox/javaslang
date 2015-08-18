@@ -10,6 +10,7 @@ import org.junit.Test;
 import java.util.Arrays;
 
 import static javaslang.collection.euler.Utils.file;
+
 import static javaslang.collection.euler.Utils.readLines;
 import static org.assertj.core.api.Assertions.assertThat;
 
