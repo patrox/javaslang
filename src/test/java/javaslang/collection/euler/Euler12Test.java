@@ -5,15 +5,11 @@
  */
 package javaslang.collection.euler;
 
-import javaslang.collection.List;
 import javaslang.collection.Stream;
 import org.junit.Test;
 
-import java.io.File;
-import java.math.BigInteger;
-import java.net.URL;
+import java.util.function.Function;
 
-import static javaslang.collection.euler.Utils.readLines;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class Euler12Test {
@@ -44,36 +40,34 @@ public class Euler12Test {
      * <p>
      * See also <a href="https://projecteuler.net/problem=12">projecteuler.net problem 12</a>.
      */
+    private Integer factorCount(Integer num) {
+        return (int) PrimeNumbers.primeFactors(num)
+                .groupBy(Function.<Long>identity())
+                .map(longStreamEntry -> longStreamEntry.value.length() + 1)
+                .product().longValue();
+    }
+
+    /*
+
+    Stream.from(1).take(10)
+        .groupBy(Function.<Integer>identity())
+        //.map(entry -> entry.value.length())
+        .toList()
+
+     */
+
+    private int triangleNumber(int x) {
+        return (x*(x+1))/2;
+    }
+
+    private final Stream<Integer> triangleNumbers = Stream.from(1).map(this::triangleNumber);
+
     @Test
-    public void shouldSolveProblem12() {
-//        assertThat(
-//                triangles()
-//                .take(10)
-//                .toList())
-//        .isEqualTo(List.of(1, 3, 6, 10, 15, 21, 28, 36, 45, 55));
-//
-//        assertThat(
-//                divisors(28)
-//                        .toList())
-//                .isEqualTo(List.of(1,2,4,7,14,28));
-        long start = System.currentTimeMillis();
-        final Integer i = solve();
-        long end = System.currentTimeMillis();
-
-        System.out.println("i = " + i);
-        System.out.println("Elapsed: " + (end - start) / 1000);
+    public void shouldSolveProblem12() throws Throwable {
+        final long start = System.currentTimeMillis();
+        assertThat(triangleNumbers.findFirst(triangleNumber -> factorCount(triangleNumber) > 500));
+        final long end = System.currentTimeMillis();
+        System.out.println("Elapsed: " + (end - start));
     }
 
-    private static Integer solve() {
-        return triangles().filter(t -> divisors(t).length() == 500).head();
-    }
-
-    // TODO: brute force ... use memoization to remember the previous values
-    private static Stream<Integer> triangles() {
-        return Stream.from(1).map( i -> Stream.from(1).take(i).sum().intValue());
-    }
-
-    private static Stream<Integer> divisors(final int n) {
-        return Stream.from(2).take(n/2).filter(d -> n % d == 0).prepend(1).append(n);
-    }
 }
