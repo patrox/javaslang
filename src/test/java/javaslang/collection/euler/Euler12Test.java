@@ -40,18 +40,18 @@ public class Euler12Test {
      * <p>
      * See also <a href="https://projecteuler.net/problem=12">projecteuler.net problem 12</a>.
      */
-    private Integer factorCount(Integer num) {
-        return (int) PrimeNumbers.primeFactors(num)
+    private Long factorCount(Long num) {
+        return PrimeNumbers.primeFactors(num)
                 .groupBy(Function.<Long>identity())
                 .map(longStreamEntry -> longStreamEntry.value.length() + 1)
                 .product().longValue();
     }
 
-    private int triangleNumber(int x) {
+    private long triangleNumber(long x) {
         return (x*(x+1))/2;
     }
 
-    private final Stream<Integer> triangleNumbers = Stream.from(1).map(this::triangleNumber);
+    private final Stream<Long> triangleNumbers = Stream.from(1).map(this::triangleNumber);
 
     @Test
     public void shouldSolveProblem12() throws Throwable {
