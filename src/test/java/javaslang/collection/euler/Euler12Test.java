@@ -47,15 +47,6 @@ public class Euler12Test {
                 .product().longValue();
     }
 
-    /*
-
-    Stream.from(1).take(10)
-        .groupBy(Function.<Integer>identity())
-        //.map(entry -> entry.value.length())
-        .toList()
-
-     */
-
     private int triangleNumber(int x) {
         return (x*(x+1))/2;
     }
