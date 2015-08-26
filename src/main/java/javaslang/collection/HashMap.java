@@ -6,12 +6,16 @@
 package javaslang.collection;
 
 import javaslang.Lazy;
+import javaslang.Tuple;
 import javaslang.Tuple2;
 import javaslang.Value;
+import javaslang.control.None;
 import javaslang.control.Option;
+import javaslang.control.Some;
 
 import java.io.Serializable;
 import java.util.Comparator;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.*;
 
@@ -109,7 +113,7 @@ public final class HashMap<K, V> implements Map<K, V>, Serializable {
 
     @Override
     public boolean containsValue(V value) {
-        throw new UnsupportedOperationException("TODO");
+        return entrySet().findFirst(entry -> entry.value == value).isDefined();
     }
 
     @Override
@@ -119,27 +123,35 @@ public final class HashMap<K, V> implements Map<K, V>, Serializable {
 
     @Override
     public HashMap<K, V> distinctBy(Comparator<? super Entry<K, V>> comparator) {
-        throw new UnsupportedOperationException("TODO");
+        Objects.requireNonNull(comparator, "comparator is null");
+        return HashMap.ofAll(iterator().distinctBy(comparator));
     }
 
     @Override
     public <U> HashMap<K, V> distinctBy(Function<? super Entry<K, V>, ? extends U> keyExtractor) {
-        throw new UnsupportedOperationException("TODO");
+        Objects.requireNonNull(keyExtractor, "keyExtractor is null");
+        return HashMap.ofAll(iterator().distinctBy(keyExtractor));
     }
 
     @Override
     public HashMap<K, V> drop(int n) {
-        throw new UnsupportedOperationException("TODO");
+        if (n <= 0) {
+            return this;
+        } else {
+            return HashMap.ofAll(iterator().drop(n));
+        }
     }
 
     @Override
     public HashMap<K, V> dropRight(int n) {
-        throw new UnsupportedOperationException("TODO");
+        return drop(n);
     }
 
     @Override
     public HashMap<K, V> dropWhile(Predicate<? super Entry<K, V>> predicate) {
-        throw new UnsupportedOperationException("TODO");
+        Objects.requireNonNull(predicate, "predicate is null");
+        final HashMap<K, V> dropped = HashMap.ofAll(iterator().dropWhile(predicate));
+        return dropped.length() == length() ? this : dropped;
     }
 
     @Override
@@ -227,22 +239,25 @@ public final class HashMap<K, V> implements Map<K, V>, Serializable {
 
     @Override
     public Entry<K, V> head() {
-        throw new UnsupportedOperationException("TODO");
+        if (tree.isEmpty()) {
+            throw new NoSuchElementException("head of empty map");
+        }
+        return iterator().head();
     }
 
     @Override
     public Option<Entry<K, V>> headOption() {
-        throw new UnsupportedOperationException("TODO");
+        return iterator().headOption();
     }
 
     @Override
     public HashMap<K, V> init() {
-        throw new UnsupportedOperationException("TODO");
+        return tail();
     }
 
     @Override
     public Option<HashMap<K, V>> initOption() {
-        throw new UnsupportedOperationException("TODO");
+        return tailOption();
     }
 
     @Override
@@ -313,7 +328,18 @@ public final class HashMap<K, V> implements Map<K, V>, Serializable {
 
     @Override
     public Tuple2<HashMap<K, V>, HashMap<K, V>> partition(Predicate<? super Entry<K, V>> predicate) {
-        throw new UnsupportedOperationException("TODO");
+        Objects.requireNonNull(predicate, "predicate is null");
+        HashMap<K, V> matchingPredicate = HashMap.empty();
+        HashMap<K, V> notMatchingPredicate = HashMap.empty();
+        for (Entry<K, V> e : this) {
+            if (predicate.test(e)) {
+                matchingPredicate = matchingPredicate.put(e);
+            } else {
+                notMatchingPredicate = notMatchingPredicate.put(e);
+            }
+        }
+        return Tuple.of(matchingPredicate, notMatchingPredicate);
+
     }
 
     @Override
@@ -351,27 +377,49 @@ public final class HashMap<K, V> implements Map<K, V>, Serializable {
 
     @Override
     public HashMap<K, V> removeAll(Iterable<? extends K> keys) {
-        throw new UnsupportedOperationException("TODO");
+        Objects.requireNonNull(keys, "keys are null");
+        HashArrayMappedTrie<K, V> removed = tree;
+        for (K key : keys) {
+            removed = removed.remove(key);
+        }
+        return removed == tree ? this : new HashMap<>(removed);
     }
 
     @Override
     public HashMap<K, V> replace(Entry<K, V> currentElement, Entry<K, V> newElement) {
-        throw new UnsupportedOperationException("TODO Patryk");
+        if (tree.containsKey(currentElement.key)) {
+            return remove(currentElement.key).put(newElement);
+        } else {
+            return this;
+        }
     }
 
     @Override
     public HashMap<K, V> replaceAll(Entry<K, V> currentElement, Entry<K, V> newElement) {
-        throw new UnsupportedOperationException("TODO Patryk");
+        return replace(currentElement, newElement);
     }
 
     @Override
     public HashMap<K, V> replaceAll(UnaryOperator<Entry<K, V>> operator) {
-        throw new UnsupportedOperationException("TODO Patryk");
+        Objects.requireNonNull(operator, "operator is null");
+        HashMap<K, V> result = HashMap.empty();
+        for (Entry<K, V> element : this) {
+            result = result.put(operator.apply(element));
+        }
+        return result;
     }
 
     @Override
     public HashMap<K, V> retainAll(Iterable<? extends Entry<K, V>> elements) {
-        throw new UnsupportedOperationException("TODO");
+        Objects.requireNonNull(elements, "elements are null");
+        final HashMap<K, V> retained = HashMap.ofAll(elements);
+        HashMap<K, V> result = HashMap.empty();
+        for (Entry<K, V> entry : this) {
+            if (retained.contains(entry)) {
+                result = result.put(entry);
+            }
+        }
+        return result;
     }
 
     @Override
@@ -379,53 +427,76 @@ public final class HashMap<K, V> implements Map<K, V>, Serializable {
         return tree.size();
     }
 
+    //TODO: not sure about the return type ....
     @Override
-    public Seq<HashMap<K, V>> sliding(int size) {
-        throw new UnsupportedOperationException("TODO");
+    public HashSet<HashMap<K, V>> sliding(int size) {
+        return sliding(size, 1);
     }
 
+    //TODO: not sure about the return type ....
     @Override
-    public Seq<HashMap<K, V>> sliding(int size, int step) {
-        throw new UnsupportedOperationException("TODO");
+    public HashSet<HashMap<K, V>> sliding(int size, int step) {
+        final Iterator<HashMap<K, V>> iterator = iterator().sliding(size, step).map(HashMap::ofAll);
+        return HashSet.ofAll(iterator);
     }
 
     @Override
     public Tuple2<HashMap<K, V>, HashMap<K, V>> span(Predicate<? super Entry<K, V>> predicate) {
-        throw new UnsupportedOperationException("TODO");
+        Objects.requireNonNull(predicate, "predicate is null");
+        final Tuple2<Iterator<Entry<K, V>>, Iterator<Entry<K, V>>> tuple = iterator().span(predicate);
+        return Tuple.of(HashMap.ofAll(tuple._1), HashMap.ofAll(tuple._2));
     }
 
     @Override
     public HashMap<K, V> tail() {
-        throw new UnsupportedOperationException("TODO");
+        if (tree.isEmpty()) {
+            throw new UnsupportedOperationException("tail of empty map");
+        }
+        return remove(head().key);
     }
 
     @Override
     public Option<HashMap<K, V>> tailOption() {
-        throw new UnsupportedOperationException("TODO");
+        if (tree.isEmpty()) {
+            return None.instance();
+        } else {
+            return new Some<>(tail());
+        }
     }
 
     @Override
     public HashMap<K, V> take(int n) {
-        throw new UnsupportedOperationException("TODO");
+        if (tree.size() <= n) {
+            return this;
+        }
+        return HashMap.ofAll(this.iterator().take(n));
     }
 
     @Override
     public HashMap<K, V> takeRight(int n) {
-        throw new UnsupportedOperationException("TODO");
+        return take(n);
     }
 
     @Override
     public HashMap<K, V> takeWhile(Predicate<? super Entry<K, V>> predicate) {
-        throw new UnsupportedOperationException("TODO");
+        Objects.requireNonNull(predicate, "predicate is null");
+        HashMap<K, V> taken = HashMap.ofAll(iterator().takeWhile(predicate));
+        return taken.length() == length() ? this : taken;
     }
 
     @Override
     public <K1, V1, K2, V2> Tuple2<HashMap<K1, V1>, HashMap<K2, V2>> unzip(Function<? super Entry<? super K, ? super V>, Tuple2<? extends Entry<? extends K1, ? extends V1>, ? extends Entry<? extends K2, ? extends V2>>> unzipper) {
+//        Objects.requireNonNull(unzipper, "unzipper is null");
+//        Tuple2<Iterator<Entry<K1, V1>>, Iterator<Entry<K2, V2>>> t = iterator().unzip(unzipper);
+//        return Tuple.of(HashMap.ofAll(t._1), HashMap.ofAll(t._2));
         throw new UnsupportedOperationException("TODO Patryk");
     }
 
     @Override
     public <K1, V1, K2, V2> Tuple2<HashMap<K1, V1>, HashMap<K2, V2>> unzip(BiFunction<? super K, ? super V, Tuple2<? extends Entry<? extends K1, ? extends V1>, ? extends Entry<? extends K2, ? extends V2>>> unzipper) {
+//        Objects.requireNonNull(unzipper, "unzipper is null");
+//        Tuple2<Iterator<Entry<K1, V1>>, Iterator<Entry<K2, V2>>> t = iterator().unzip(unzipper);
+//        return Tuple.of(HashMap.ofAll(t._1), HashMap.ofAll(t._2));
         throw new UnsupportedOperationException("TODO Patryk");
     }
 
@@ -436,6 +507,8 @@ public final class HashMap<K, V> implements Map<K, V>, Serializable {
 
     @Override
     public <U> HashMap<Tuple2<K, V>, U> zip(Iterable<U> that) {
+//        Objects.requireNonNull(that, "that is null");
+//        return HashMap.ofAll(iterator().zip(that));
         throw new UnsupportedOperationException("TODO Patryk");
     }
 

@@ -170,10 +170,10 @@ public interface Map<K, V> extends Traversable<Map.Entry<K, V>>, Function<K, V> 
     Map<K, V> retainAll(Iterable<? extends Entry<K, V>> elements);
 
     @Override
-    Seq<? extends Map<K, V>> sliding(int size);
+    Set<? extends Map<K, V>> sliding(int size);
 
     @Override
-    Seq<? extends Map<K, V>> sliding(int size, int step);
+    Set<? extends Map<K, V>> sliding(int size, int step);
 
     @Override
     Tuple2<? extends Map<K, V>, ? extends Map<K, V>> span(Predicate<? super Entry<K, V>> predicate);
